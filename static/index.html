@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Live Intelligence Analyzer</title>
+    <meta name="description" content="AI powered news analysis and intelligence brief extraction.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1 id="title">Intelligence Analyzer</h1>
+            <p id="subtitle">Real-time LLM Synthesis</p>
+        </header>
+
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="topic-input" placeholder="Enter Topic, Entity, or Event..." autocomplete="off">
+                <button id="analyze-btn">Analyze</button>
+            </div>
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Synthesizing intelligence...</p>
+            </div>
+            <div id="error-msg" class="hidden"></div>
+        </section>
+
+        <section id="results" class="hidden">
+            <div class="glass-panel brief-panel">
+                <h2>Daily Brief</h2>
+                <p id="brief-text"></p>
+                <div class="audio-container">
+                    <audio id="brief-audio" controls></audio>
+                </div>
+            </div>
+
+            <h2>Sources</h2>
+            <div id="cards-grid" class="cards-grid"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
