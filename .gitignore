@@ -1,4 +1,4 @@
 .env
-static\audio
-__pycache__
-.venv
+__pycache__/
+.venv/
+static/audio/
