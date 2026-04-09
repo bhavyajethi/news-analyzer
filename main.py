@@ -6,12 +6,13 @@ from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Optional
 from groq import Groq
 from gtts import gTTS
 from dotenv import load_dotenv
 import time
-import tempfile
+import io
+import base64
 load_dotenv()
 
 SERP_KEY = os.getenv("SERPAPI_API_KEY")
@@ -27,6 +28,16 @@ class ArticleIntel(BaseModel):
     Perspective: str
     HypeScore: int
 
+class BriefImpact(BaseModel):
+    Winners: list[str]
+    Losers: list[str]
+
+class BriefIntel(BaseModel):
+    BottomLine: str
+    Consensus: str
+    Discrepancies: Optional[str]
+    Impact: BriefImpact
+
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -39,8 +50,7 @@ app.add_middleware(
 )
 ai = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 
-AUDIO_DIR = os.path.join(tempfile.gettempdir(), "news_analyzer_audio")
-os.makedirs(AUDIO_DIR, exist_ok=True)
+ai = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 
 def auto_retry_genai(cli, c, schema=None):
     sys = "You are an intelligence analyst."
@@ -82,12 +92,14 @@ async def analyze_topic(q: IntelQuery):
         "num": 10
     })
     news = res.json()
-    urls = [r.get("link") for r in news.get("news_results", [])[:10] if r.get("link")]
+    news_items = [{"url": r.get("link"), "title": r.get("title", "News Analysis")} for r in news.get("news_results", [])[:10] if r.get("link")]
 
     articles = []
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
     
-    for u in urls:
+    for item in news_items:
+        u = item["url"]
+        t = item["title"]
         if len(articles) >= 4:
             break
         try:
@@ -103,26 +115,27 @@ async def analyze_topic(q: IntelQuery):
                 continue
 
             intel = auto_retry_genai(ai, c, ArticleIntel)
-            articles.append({"url": u, "data": json.loads(intel)})
+            articles.append({"url": u, "title": t, "data": json.loads(intel)})
         except Exception:
             continue
 
     if not articles:
         raise HTTPException(400, "Extraction Failed")
 
-    bp = f"Synthesize a bottom line brief for '{q.topic}' from: {json.dumps(articles)}"
-    bt = auto_retry_genai(ai, bp)
+    bp = f"Synthesize a daily brief for '{q.topic}' from: {json.dumps(articles)}\nEnsure you outline a 1-sentence Consensus, any conflicting facts as Discrepancies (or null), and an Impact Radius with up to 3 Winners and 3 Losers."
+    bt_json = auto_retry_genai(ai, bp, BriefIntel)
+    bt_data = json.loads(bt_json)
 
-    aid = str(uuid.uuid4())
-    apath = os.path.join(AUDIO_DIR, f"{aid}.mp3")
-    tts = gTTS(text=bt, lang='en', slow=False)
-    tts.save(apath)
+    tts = gTTS(text=bt_data["BottomLine"], lang='en', slow=False)
+    audio_fp = io.BytesIO()
+    tts.write_to_fp(audio_fp)
+    audio_fp.seek(0)
+    audio_b64 = base64.b64encode(audio_fp.read()).decode("utf-8")
 
     return {
-        "brief": bt,
-        "audio": f"/audio/{aid}.mp3",
+        "brief": bt_data,
+        "audio_base64": f"data:audio/mp3;base64,{audio_b64}",
         "articles": articles
     }
 
-app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

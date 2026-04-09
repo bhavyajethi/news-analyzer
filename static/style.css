@@ -214,6 +214,16 @@ h2.sources-title {
     justify-content: flex-start;
     flex-wrap: wrap;
     gap: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.35;
+    margin-bottom: 1rem;
 }
 
 .badge {
@@ -296,3 +306,84 @@ h2.sources-title {
 .hype-source a:hover {
     text-decoration: underline;
 }
+
+.secondary-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
+.secondary-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+.brief-subhead {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: #0f172a;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+.brief-subhead.warning {
+    color: #b45309;
+}
+#brief-discrepancies {
+    background: #fffbeb;
+    padding: 1rem;
+    border-left: 4px solid #f59e0b;
+    border-radius: 4px;
+    color: #92400e;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+}
+#brief-consensus {
+    font-size: 1rem;
+    color: #334155;
+    font-family: 'Inter', sans-serif;
+}
+.impact-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 1.5rem;
+}
+.impact-col {
+    flex: 1;
+}
+.impact-col h4 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.8rem;
+    color: var(--text-secondary);
+}
+.impact-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+.impact-list li {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.impact-list.winners li {
+    background: #d1fae5;
+    color: #059669;
+    border: 1px solid #6ee7b7;
+}
+.impact-list.losers li {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+

@@ -31,9 +31,34 @@
 
         <section id="results" class="hidden">
             <div class="glass-panel brief-panel">
-                <h2>Daily Brief</h2>
-                <p id="brief-text"></p>
-                <div class="audio-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.8rem;">
+                    <h2 style="margin: 0; border: none; padding: 0;">Daily Brief</h2>
+                    <button id="copy-markdown-btn" class="secondary-btn">Copy Report as Markdown</button>
+                </div>
+                <p id="brief-bottomline"></p>
+                
+                <div id="brief-consensus-section" class="hidden">
+                    <h3 class="brief-subhead">Consensus</h3>
+                    <p id="brief-consensus"></p>
+                </div>
+                
+                <div id="brief-discrepancies-section" class="hidden">
+                    <h3 class="brief-subhead warning">Discrepancies</h3>
+                    <p id="brief-discrepancies"></p>
+                </div>
+
+                <div id="brief-impact-section" class="hidden impact-container">
+                    <div class="impact-col">
+                        <h4>Winners</h4>
+                        <ul id="brief-winners" class="impact-list winners"></ul>
+                    </div>
+                    <div class="impact-col">
+                        <h4>Losers</h4>
+                        <ul id="brief-losers" class="impact-list losers"></ul>
+                    </div>
+                </div>
+
+                <div class="audio-container" style="margin-top: 1.5rem;">
                     <audio id="brief-audio" controls></audio>
                 </div>
             </div>
