@@ -14,11 +14,11 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     document.getElementById('cards-grid').innerHTML = '';
 
     try {
-        const res = await fetch('http://127.0.0.1:8000/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic })
-        });
+        const res = await fetch(`/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: topicValue })
+    });
 
         const data = await res.json();
 
