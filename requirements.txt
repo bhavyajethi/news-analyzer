@@ -97,12 +97,14 @@ tenacity==9.1.4
     # via google-genai
 typing-extensions==4.15.0
     # via
+    #   anyio
     #   beautifulsoup4
     #   fastapi
     #   google-genai
     #   groq
     #   pydantic
     #   pydantic-core
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
