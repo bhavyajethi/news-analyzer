@@ -13,8 +13,13 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     errorMsg.classList.add('hidden');
     document.getElementById('cards-grid').innerHTML = '';
 
+    let u = "/api/analyze";
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        u = "http://127.0.0.1:8000/api/analyze";
+    }
+
     try {
-        const res = await fetch('http://127.0.0.1:8000/api/analyze', {
+        const res = await fetch(u, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic })
@@ -28,37 +33,51 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
 
         window.currentReportData = data;
         const brief = data.brief;
-        
+
         document.getElementById('brief-bottomline').textContent = brief.BottomLine;
-        
+
         const cSec = document.getElementById('brief-consensus-section');
         const cEl = document.getElementById('brief-consensus');
+        
         if (brief.Consensus) {
             cEl.textContent = brief.Consensus;
             cSec.classList.remove('hidden');
-        } else cSec.classList.add('hidden');
+        } else {
+            cSec.classList.add('hidden');
+        }
 
         const dSec = document.getElementById('brief-discrepancies-section');
         const dEl = document.getElementById('brief-discrepancies');
+        
         if (brief.Discrepancies && brief.Discrepancies.length > 5) {
             dEl.textContent = brief.Discrepancies;
             dSec.classList.remove('hidden');
-        } else dSec.classList.add('hidden');
+        } else {
+            dSec.classList.add('hidden');
+        }
 
         const iSec = document.getElementById('brief-impact-section');
         const winList = document.getElementById('brief-winners');
         const loseList = document.getElementById('brief-losers');
         winList.innerHTML = '';
         loseList.innerHTML = '';
+        
         if (brief.Impact) {
             brief.Impact.Winners.forEach(w => {
-                const li = document.createElement('li'); li.textContent = w; winList.appendChild(li);
+                const li = document.createElement('li'); 
+                li.textContent = w; 
+                winList.appendChild(li);
             });
             brief.Impact.Losers.forEach(l => {
-                const li = document.createElement('li'); li.textContent = l; loseList.appendChild(li);
+                const li = document.createElement('li'); 
+                li.textContent = l; 
+                loseList.appendChild(li);
             });
             iSec.classList.remove('hidden');
-        } else iSec.classList.add('hidden');
+        } else {
+            iSec.classList.add('hidden');
+        }
+        
         const audio = document.getElementById('brief-audio');
         audio.src = data.audio_base64;
         audio.load();
@@ -69,6 +88,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
             const sentClass = d.Sentiment ? d.Sentiment.toLowerCase() : 'neutral';
             const hype = d.HypeScore || 5;
             let hypeColor = '#10b981';
+            
             if (hype > 7) hypeColor = '#ef4444';
             else if (hype > 4) hypeColor = '#f59e0b';
 
@@ -121,6 +141,7 @@ document.getElementById('topic-input').addEventListener('keypress', (e) => {
 
 document.getElementById('copy-markdown-btn').addEventListener('click', async () => {
     if (!window.currentReportData) return;
+    
     const d = window.currentReportData;
     const brief = d.brief;
     const topic = document.getElementById('topic-input').value.trim();
