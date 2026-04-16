@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 import time
 import io
 import base64
+from fastapi.middleware.cors import CORSMiddleware
+
 load_dotenv()
 
 SERP_KEY = os.getenv("SERPAPI_API_KEY")
@@ -37,8 +39,6 @@ class BriefIntel(BaseModel):
     Discrepancies: Optional[str]
     Impact: BriefImpact
 
-from fastapi.middleware.cors import CORSMiddleware
-
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -47,20 +47,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-ai = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 
 ai = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
-req_logs = {}
+r_logs = {}
+s_cache = {}
 
-def auto_retry_genai(cli, c, schema=None):
+def gen(cli, c, sch=None):
     sys = "You are an intelligence analyst."
-    if schema:
-        sys += f"\nYou must return a valid JSON object matching this schema. CRITICAL: 'Perspective' MUST be exactly 1 or 2 words ONLY (e.g. 'Pro-Consumer', 'Skeptical').\n{schema.schema_json()}"
+    if sch:
+        sys += f"\nYou must return a valid JSON object matching this schema. CRITICAL: 'Perspective' MUST be exactly 1 or 2 words ONLY.\n{sch.schema_json()}"
     
     for _ in range(3):
         for m in ['llama-3.3-70b-versatile', 'llama3-8b-8192']:
             try:
-                if schema:
+                if sch:
                     res = cli.chat.completions.create(
                         model=m,
                         messages=[{"role": "system", "content": sys}, {"role": "user", "content": c}],
@@ -73,32 +73,40 @@ def auto_retry_genai(cli, c, schema=None):
                     )
                 return res.choices[0].message.content
             except Exception as e:
-                err_str = str(e)
-                if "429" in err_str or "503" in err_str:
+                err = str(e)
+                if "429" in err or "503" in err:
                     time.sleep(1.5)
                 else:
                     raise e
     raise Exception("Groq Retry Limit")
 
 @app.post("/api/analyze")
-async def analyze_topic(q: IntelQuery, request: Request):
+async def analyze_t(q: IntelQuery, req: Request):
     if not SERP_KEY or not GROQ_KEY:
         raise HTTPException(500, "Missing Keys")
 
-    ip = request.client.host if request.client else "unknown"
+    xf = req.headers.get("x-forwarded-for")
+    ip = xf.split(",")[0].strip() if xf else (req.client.host if req.client else "unknown")
+    
     now = time.time()
     cut = now - 60
 
-    for k in list(req_logs.keys()):
-        req_logs[k] = [t for t in req_logs[k] if t > cut]
-        if not req_logs[k]:
-            del req_logs[k]
+    for k in list(r_logs.keys()):
+        r_logs[k] = [t for t in r_logs[k] if t > cut]
+        if not r_logs[k]:
+            del r_logs[k]
 
-    logs = req_logs.get(ip, [])
-    if len(logs) >= 2:
+    usr_logs = r_logs.get(ip, [])
+    if len(usr_logs) >= 2:
         raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
-    logs.append(now)
-    req_logs[ip] = logs
+    usr_logs.append(now)
+    r_logs[ip] = usr_logs
+
+    tk = q.topic.lower().strip()
+    if tk in s_cache:
+        c_dat, c_tim = s_cache[tk]
+        if now - c_tim < 900:
+            return c_dat
 
     res = requests.get("https://serpapi.com/search", params={
         "engine": "google_news",
@@ -106,51 +114,53 @@ async def analyze_topic(q: IntelQuery, request: Request):
         "api_key": SERP_KEY,
         "num": 10
     })
-    news = res.json()
-    news_items = [{"url": r.get("link"), "title": r.get("title", "News Analysis")} for r in news.get("news_results", [])[:10] if r.get("link")]
+    n_data = res.json()
+    items = [{"url": r.get("link"), "title": r.get("title", "News Analysis")} for r in n_data.get("news_results", [])[:10] if r.get("link")]
 
-    articles = []
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
+    arts = []
+    hdrs = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
     
-    for item in news_items:
-        u = item["url"]
-        t = item["title"]
-        if len(articles) >= 4:
+    for i in items:
+        u = i["url"]
+        t = i["title"]
+        if len(arts) >= 4:
             break
         try:
-            p = requests.get(u, timeout=5, headers=headers)
+            p = requests.get(u, timeout=5, headers=hdrs)
             if p.status_code != 200:
                 continue
                 
             s = BeautifulSoup(p.text, "html.parser")
             c = " ".join([pt.text for pt in s.find_all("p")])
-            c_low = c.lower()
+            cl = c.lower()
             
-            if len(c) < 150 or "enable javascript" in c_low or "verify you are" in c_low or "access denied" in c_low or "security check" in c_low:
+            if len(c) < 150 or "enable javascript" in cl or "verify you are" in cl or "access denied" in cl or "security check" in cl:
                 continue
 
-            intel = auto_retry_genai(ai, c, ArticleIntel)
-            articles.append({"url": u, "title": t, "data": json.loads(intel)})
+            intl = gen(ai, c, ArticleIntel)
+            arts.append({"url": u, "title": t, "data": json.loads(intl)})
         except Exception:
             continue
 
-    if not articles:
+    if not arts:
         raise HTTPException(400, "Extraction Failed")
 
-    bp = f"Synthesize a daily brief for '{q.topic}' from: {json.dumps(articles)}\nEnsure you outline a 1-sentence Consensus, any conflicting facts as Discrepancies (or null), and an Impact Radius with up to 3 Winners and 3 Losers."
-    bt_json = auto_retry_genai(ai, bp, BriefIntel)
-    bt_data = json.loads(bt_json)
+    bp = f"Synthesize a daily brief for '{q.topic}' from: {json.dumps(arts)}\nEnsure you outline a 1-sentence Consensus, any conflicting facts as Discrepancies (or null), and an Impact Radius with up to 3 Winners and 3 Losers."
+    b_json = gen(ai, bp, BriefIntel)
+    b_dat = json.loads(b_json)
 
-    tts = gTTS(text=bt_data["BottomLine"], lang='en', slow=False)
-    audio_fp = io.BytesIO()
-    tts.write_to_fp(audio_fp)
-    audio_fp.seek(0)
-    audio_b64 = base64.b64encode(audio_fp.read()).decode("utf-8")
+    tts = gTTS(text=b_dat["BottomLine"], lang='en', slow=False)
+    afp = io.BytesIO()
+    tts.write_to_fp(afp)
+    afp.seek(0)
+    ab64 = base64.b64encode(afp.read()).decode("utf-8")
 
-    return {
-        "brief": bt_data,
-        "audio_base64": f"data:audio/mp3;base64,{audio_b64}",
-        "articles": articles
+    f_res = {
+        "brief": b_dat,
+        "audio_base64": f"data:audio/mp3;base64,{ab64}",
+        "articles": arts
     }
+    s_cache[tk] = (f_res, now)
+    return f_res
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
