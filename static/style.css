@@ -68,6 +68,7 @@ header {
 
 .search-box {
     display: flex;
+    align-items: center;
     width: 100%;
     max-width: 650px;
     background: var(--card-bg);
@@ -76,6 +77,12 @@ header {
     padding: 0.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: box-shadow 0.2s ease, border-color 0.2s;
+}
+
+.search-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .search-box:focus-within {
@@ -109,6 +116,12 @@ header {
 
 #analyze-btn:hover {
     background: #0f172a;
+}
+
+#analyze-btn:disabled,
+.secondary-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .hidden {
@@ -387,3 +400,133 @@ h2.sources-title {
     border: 1px solid #fca5a5;
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: 2.5rem 1.25rem;
+    }
+
+    header {
+        margin-bottom: 3rem;
+    }
+
+    #title {
+        font-size: 2.6rem;
+    }
+
+    #subtitle {
+        font-size: 0.95rem;
+    }
+
+    .search-section {
+        margin-bottom: 3.5rem;
+    }
+
+    .search-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    #topic-input {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font-size: 1rem;
+    }
+
+    .search-actions {
+        width: 100%;
+    }
+
+    .search-actions .secondary-btn,
+    .search-actions #analyze-btn {
+        flex: 1;
+        width: 100%;
+    }
+
+    .brief-panel {
+        padding: 1.75rem;
+        margin-bottom: 3rem;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .card {
+        padding: 1.5rem;
+    }
+
+    .impact-container {
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 1.75rem 0.85rem;
+    }
+
+    #title {
+        font-size: 2.1rem;
+        letter-spacing: -0.5px;
+    }
+
+    #subtitle {
+        font-size: 0.82rem;
+        letter-spacing: 0.35px;
+    }
+
+    .search-box {
+        padding: 0.65rem;
+    }
+
+    .search-actions {
+        flex-direction: column;
+    }
+
+    #analyze-btn,
+    .secondary-btn {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .brief-panel {
+        padding: 1.15rem;
+    }
+
+    .brief-panel h2,
+    h2.sources-title,
+    .card-title {
+        font-size: 1.2rem;
+    }
+
+    .brief-subhead {
+        font-size: 1.05rem;
+    }
+
+    .card {
+        padding: 1.1rem;
+        gap: 1rem;
+    }
+
+    .cards-grid {
+        gap: 1rem;
+    }
+
+    .card-content p,
+    .card-expect p,
+    #brief-consensus,
+    #brief-discrepancies,
+    #brief-bottomline,
+    .impact-list li {
+        font-size: 0.95rem;
+    }
+
+    .impact-list {
+        gap: 0.45rem;
+    }
+}

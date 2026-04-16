@@ -1,9 +1,8 @@
 import os
 import json
-import uuid
 import requests
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Literal, Optional
@@ -51,6 +50,7 @@ app.add_middleware(
 ai = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 
 ai = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
+req_logs = {}
 
 def auto_retry_genai(cli, c, schema=None):
     sys = "You are an intelligence analyst."
@@ -81,9 +81,24 @@ def auto_retry_genai(cli, c, schema=None):
     raise Exception("Groq Retry Limit")
 
 @app.post("/api/analyze")
-async def analyze_topic(q: IntelQuery):
+async def analyze_topic(q: IntelQuery, request: Request):
     if not SERP_KEY or not GROQ_KEY:
         raise HTTPException(500, "Missing Keys")
+
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    cut = now - 60
+
+    for k in list(req_logs.keys()):
+        req_logs[k] = [t for t in req_logs[k] if t > cut]
+        if not req_logs[k]:
+            del req_logs[k]
+
+    logs = req_logs.get(ip, [])
+    if len(logs) >= 2:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again in a minute.")
+    logs.append(now)
+    req_logs[ip] = logs
 
     res = requests.get("https://serpapi.com/search", params={
         "engine": "google_news",
